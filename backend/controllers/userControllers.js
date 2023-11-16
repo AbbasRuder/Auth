@@ -1,11 +1,28 @@
 import asyncHandler from "express-async-handler"
 import User from "../models/userModel.js"
+import generateToken from "../utils/generateToken.js"
 
-// -@desc -> Authenticate a user
+// -@desc -> Authenticate(login) a user
 // -route -> POST api/users/auth
 // -@access -> public
 const authUser = asyncHandler(async (req, res) => {
-    res.status(200).json({ message: "Authenticate User" })
+    const { email, password } = req.body
+
+    const user = await User.findOne({ email })
+
+    //- check if both email and password is true
+    if (user && (await user.comparePasswords(password))) {
+        generateToken(user._id, res)
+
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email
+        })
+    } else {
+        res.status(401)
+        throw new Error("Invalid email or password")
+    }
 })
 
 // -@desc -> Register a new user
@@ -13,9 +30,9 @@ const authUser = asyncHandler(async (req, res) => {
 // -@access -> public
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body
-    
-    // -check if user already exist
-    const existingUser = await User.findOne({ email })
+
+    const existingUser = await User.findOne({ email }).select("-password")
+
     if (existingUser) {
         res.status(400)
         throw new Error("User already exists")
@@ -23,6 +40,9 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const newUser = await User.create({ name, email, password })
     if (newUser) {
+        // -generating jwt token
+        generateToken(newUser._id, res)
+
         res.status(201).json({
             _id: newUser._id,
             name: newUser.name,
