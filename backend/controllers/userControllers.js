@@ -69,14 +69,39 @@ const logoutUser = asyncHandler(async (req, res) => {
 // -route -> GET api/users/profile
 // -@access -> private
 const getUserProfile = asyncHandler(async (req, res) => {
-    res.status(200).json({ message: "Getting the user profile data" })
+    res.status(200).json({
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email
+    })
 })
 
 // -@desc -> Updating the user profile data
 // -route -> PUT api/users/profile
 // -@access -> private
 const updateUserProfile = asyncHandler(async (req, res) => {
-    res.status(200).json({ message: "Updating the user profile data" })
+
+    const { email, name, password } = req.body
+
+    const userID = req.user._id
+    const user = await User.findById(userID)
+    if (user) {
+        if (email) user.email = email
+        if (name) user.name = name
+        // -password hashing will be done by the mongoose pre-hook defined in the userModel 
+        if (password) user.password = password
+
+        const newUser = await user.save()
+
+        res.status(200).json({
+            _id: newUser._id,
+            name: newUser.name,
+            email: newUser.email
+        })
+    } else {
+        res.status(404)
+        throw new Error("User not found")
+    }
 })
 
 

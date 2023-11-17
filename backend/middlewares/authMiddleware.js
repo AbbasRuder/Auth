@@ -8,7 +8,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 
     if (token) {
         try {
-            // -verifying the token using the secret 
+            // -verifies the token using the secret and returns the decoded payload
             const decode = jwt.verify(token, process.env.JWT_SECRET)
 
             const user = await User.findById(decode.userId).select("-password")
